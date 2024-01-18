@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -235,7 +234,7 @@ func TestV1SignData(t *testing.T) {
 		signerOpts       crypto.SignerOpts
 		signature        string
 		fingerprint      string
-		expectSignerOpts interface{}
+		expectSignerOpts any
 		expectCode       codes.Code
 		expectMessage    string
 	}{
@@ -331,7 +330,7 @@ func loadV1Plugin(t *testing.T, plugin fakeV1Plugin) keymanager.KeyManager {
 type fakeV1Plugin struct {
 	keymanagerv1.UnimplementedKeyManagerServer
 
-	expectSignerOpts interface{}
+	expectSignerOpts any
 
 	generateKeyResponse   *keymanagerv1.GenerateKeyResponse
 	generateKeyErr        error
@@ -373,7 +372,6 @@ func (p *fakeV1Plugin) SignData(_ context.Context, req *keymanagerv1.SignDataReq
 	}
 
 	if diff := cmp.Diff(p.expectSignerOpts, req.GetSignerOpts(), protocmp.Transform()); diff != "" {
-		fmt.Println("DIFF", diff)
 		return nil, status.Errorf(codes.InvalidArgument, "unexpected signer opts %s", diff)
 	}
 

@@ -36,7 +36,7 @@ var _ datastore.DataStore = (*DataStore)(nil)
 func New(tb testing.TB) *DataStore {
 	log, _ := test.NewNullLogger()
 
-	ds := sql.New(log)
+	ds := sql.New(log, true)
 	ds.SetUseServerTimestamps(true)
 
 	err := ds.Configure(ctx, fmt.Sprintf(`
@@ -177,6 +177,13 @@ func (s *DataStore) PruneAttestedNodesEvents(ctx context.Context, olderThan time
 	return s.ds.PruneAttestedNodesEvents(ctx, olderThan)
 }
 
+func (s *DataStore) GetLatestAttestedNodeEventID(ctx context.Context) (uint, error) {
+	if err := s.getNextError(); err != nil {
+		return 0, err
+	}
+	return s.ds.GetLatestAttestedNodeEventID(ctx)
+}
+
 func (s *DataStore) TaintX509CA(ctx context.Context, trustDomainID string, publicKeyToTaint crypto.PublicKey) error {
 	if err := s.getNextError(); err != nil {
 		return err
@@ -306,6 +313,13 @@ func (s *DataStore) PruneRegistrationEntriesEvents(ctx context.Context, olderTha
 	return s.ds.PruneRegistrationEntriesEvents(ctx, olderThan)
 }
 
+func (s *DataStore) GetLatestRegistrationEntryEventID(ctx context.Context) (uint, error) {
+	if err := s.getNextError(); err != nil {
+		return 0, err
+	}
+	return s.ds.GetLatestRegistrationEntryEventID(ctx)
+}
+
 func (s *DataStore) CreateJoinToken(ctx context.Context, token *datastore.JoinToken) error {
 	if err := s.getNextError(); err != nil {
 		return err
@@ -367,6 +381,34 @@ func (s *DataStore) UpdateFederationRelationship(ctx context.Context, fr *datast
 		return nil, err
 	}
 	return s.ds.UpdateFederationRelationship(ctx, fr, mask)
+}
+
+func (s *DataStore) FetchCAJournal(ctx context.Context, activeX509AuthorityID string) (*datastore.CAJournal, error) {
+	if err := s.getNextError(); err != nil {
+		return nil, err
+	}
+	return s.ds.FetchCAJournal(ctx, activeX509AuthorityID)
+}
+
+func (s *DataStore) ListCAJournalsForTesting(ctx context.Context) ([]*datastore.CAJournal, error) {
+	if err := s.getNextError(); err != nil {
+		return nil, err
+	}
+	return s.ds.ListCAJournalsForTesting(ctx)
+}
+
+func (s *DataStore) SetCAJournal(ctx context.Context, caJournal *datastore.CAJournal) (*datastore.CAJournal, error) {
+	if err := s.getNextError(); err != nil {
+		return nil, err
+	}
+	return s.ds.SetCAJournal(ctx, caJournal)
+}
+
+func (s *DataStore) PruneCAJournals(ctx context.Context, allCAsExpireBefore int64) error {
+	if err := s.getNextError(); err != nil {
+		return err
+	}
+	return s.ds.PruneCAJournals(ctx, allCAsExpireBefore)
 }
 
 func (s *DataStore) SetNextError(err error) {

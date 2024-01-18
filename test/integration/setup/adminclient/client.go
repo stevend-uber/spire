@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	agentv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/agent/v1"
 	bundlev1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/bundle/v1"
@@ -25,7 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 const (
@@ -208,7 +208,7 @@ func mintJWTSVID(ctx context.Context, c *itclient.Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse token: %w", err)
 	}
-	claimsMap := make(map[string]interface{})
+	claimsMap := make(map[string]any)
 	err = token.UnsafeClaimsWithoutVerification(&claimsMap)
 	if err != nil {
 		return fmt.Errorf("claims verification failed: %w", err)

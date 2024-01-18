@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"context"
 	"crypto/x509"
 
 	"github.com/sirupsen/logrus"
@@ -18,7 +19,6 @@ import (
 	"github.com/spiffe/spire/pkg/server/datastore"
 	"github.com/spiffe/spire/proto/spire/common"
 	"github.com/spiffe/spire/test/clock"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -152,6 +152,7 @@ func RateLimits(config RateLimitConfig) map[string]api.RateLimiter {
 		"/spire.api.server.entry.v1.Entry/BatchUpdateEntry":                              noLimit,
 		"/spire.api.server.entry.v1.Entry/BatchDeleteEntry":                              noLimit,
 		"/spire.api.server.entry.v1.Entry/GetAuthorizedEntries":                          noLimit,
+		"/spire.api.server.entry.v1.Entry/SyncAuthorizedEntries":                         noLimit,
 		"/spire.api.server.agent.v1.Agent/CountAgents":                                   noLimit,
 		"/spire.api.server.agent.v1.Agent/ListAgents":                                    noLimit,
 		"/spire.api.server.agent.v1.Agent/GetAgent":                                      noLimit,

@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/andres-erbsen/clock"
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/cryptosigner"
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/sirupsen/logrus"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/spire/pkg/common/cryptoutil"
@@ -20,9 +23,6 @@ import (
 	"github.com/spiffe/spire/pkg/common/x509util"
 	"github.com/spiffe/spire/pkg/server/credtemplate"
 	"github.com/spiffe/spire/pkg/server/credvalidator"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/cryptosigner"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 const (
@@ -347,7 +347,7 @@ func (ca *CA) signX509SVID(x509CA *X509CA, template *x509.Certificate) ([]*x509.
 	return makeCertChain(x509CA, x509SVID), nil
 }
 
-func (ca *CA) signJWTSVID(jwtKey *JWTKey, claims map[string]interface{}) (string, error) {
+func (ca *CA) signJWTSVID(jwtKey *JWTKey, claims map[string]any) (string, error) {
 	alg, err := cryptoutil.JoseAlgFromPublicKey(jwtKey.Signer.Public())
 	if err != nil {
 		return "", fmt.Errorf("failed to determine JWT key algorithm: %w", err)

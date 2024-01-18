@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/spire/pkg/server/credvalidator"
 	"github.com/spiffe/spire/test/clock"
 	"github.com/spiffe/spire/test/testkey"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var (
@@ -276,7 +276,7 @@ func TestValidateWorkloadJWTSVID(t *testing.T) {
 	for _, tc := range []struct {
 		desc          string
 		setup         func(claims *jwt.Claims)
-		makeJWT       func(t *testing.T, claims interface{}) string
+		makeJWT       func(t *testing.T, claims any) string
 		tokenOverride string
 		expectErr     string
 	}{
@@ -287,20 +287,20 @@ func TestValidateWorkloadJWTSVID(t *testing.T) {
 		{
 			desc:  "malformed JWT",
 			setup: func(claims *jwt.Claims) {},
-			makeJWT: func(t *testing.T, claims interface{}) string {
+			makeJWT: func(t *testing.T, claims any) string {
 				return "not-a-jwt"
 			},
-			expectErr: "failed to parse JWT-SVID for validation: square/go-jose: compact JWS format must have three parts",
+			expectErr: "failed to parse JWT-SVID for validation: go-jose/go-jose: compact JWS format must have three parts",
 		},
 		{
 			desc:  "malformed claims",
 			setup: func(claims *jwt.Claims) {},
-			makeJWT: func(t *testing.T, claims interface{}) string {
-				return makeJWT(t, map[string]interface{}{
+			makeJWT: func(t *testing.T, claims any) string {
+				return makeJWT(t, map[string]any{
 					"aud": 1,
 				})
 			},
-			expectErr: "failed to extract JWT-SVID claims for validation: square/go-jose/jwt: expected string or array value to unmarshal to Audience",
+			expectErr: "failed to extract JWT-SVID claims for validation: go-jose/go-jose/jwt: expected string or array value to unmarshal to Audience",
 		},
 		{
 			desc: "unexpected subject",
@@ -389,7 +389,7 @@ func newValidator(t *testing.T) *credvalidator.Validator {
 	return validator
 }
 
-func makeJWT(t *testing.T, claims interface{}) string {
+func makeJWT(t *testing.T, claims any) string {
 	signingKey := jose.SigningKey{Algorithm: jose.ES256, Key: jwtKey}
 	signer, err := jose.NewSigner(signingKey, nil)
 	require.NoError(t, err)

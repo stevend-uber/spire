@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/mitchellh/cli"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	svidv1 "github.com/spiffe/spire-api-sdk/proto/spire/api/server/svid/v1"
@@ -15,7 +16,6 @@ import (
 	commoncli "github.com/spiffe/spire/pkg/common/cli"
 	"github.com/spiffe/spire/pkg/common/cliprinter"
 	"github.com/spiffe/spire/pkg/common/diskutil"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 func NewMintCommand() cli.Command {
@@ -132,7 +132,7 @@ func ttlToSeconds(ttl time.Duration) int32 {
 	return int32((ttl + time.Second - 1) / time.Second)
 }
 
-func prettyPrintMint(env *commoncli.Env, results ...interface{}) error {
+func prettyPrintMint(env *commoncli.Env, results ...any) error {
 	if resp, ok := results[0].(*svidv1.MintJWTSVIDResponse); ok {
 		return env.Println(resp.Svid.Token)
 	}

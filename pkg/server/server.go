@@ -288,19 +288,21 @@ func (s *Server) loadCatalog(ctx context.Context, metrics telemetry.Metrics, ide
 		IdentityProvider: identityProvider,
 		AgentStore:       agentStore,
 		HealthChecker:    healthChecker,
+		EventsBasedCache: s.config.EventsBasedCache,
 	})
 }
 
 func (s *Server) newCredBuilder(cat catalog.Catalog) (*credtemplate.Builder, error) {
 	return credtemplate.NewBuilder(credtemplate.Config{
-		TrustDomain:         s.config.TrustDomain,
-		X509CASubject:       s.config.CASubject,
-		X509CATTL:           s.config.CATTL,
-		AgentSVIDTTL:        s.config.AgentTTL,
-		X509SVIDTTL:         s.config.X509SVIDTTL,
-		JWTSVIDTTL:          s.config.JWTSVIDTTL,
-		JWTIssuer:           s.config.JWTIssuer,
-		CredentialComposers: cat.GetCredentialComposers(),
+		TrustDomain:            s.config.TrustDomain,
+		X509CASubject:          s.config.CASubject,
+		X509CATTL:              s.config.CATTL,
+		AgentSVIDTTL:           s.config.AgentTTL,
+		X509SVIDTTL:            s.config.X509SVIDTTL,
+		JWTSVIDTTL:             s.config.JWTSVIDTTL,
+		JWTIssuer:              s.config.JWTIssuer,
+		ExcludeSNFromCASubject: s.config.ExcludeSNFromCASubject,
+		CredentialComposers:    cat.GetCredentialComposers(),
 	})
 }
 
@@ -391,6 +393,7 @@ func (s *Server) newEndpointsServer(ctx context.Context, catalog catalog.Catalog
 		Uptime:               uptime.Uptime,
 		Clock:                clock.New(),
 		CacheReloadInterval:  s.config.CacheReloadInterval,
+		EventsBasedCache:     s.config.EventsBasedCache,
 		PruneEventsOlderThan: s.config.PruneEventsOlderThan,
 		AuditLogEnabled:      s.config.AuditLogEnabled,
 		AuthPolicyEngine:     authPolicyEngine,

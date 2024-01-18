@@ -186,11 +186,7 @@ func TestListenAndServe(t *testing.T) {
 		return entrycache.BuildFromDataStore(ctx, ds)
 	}
 
-	pruneEventsFn := func(context.Context, time.Duration) error {
-		return nil
-	}
-
-	ef, err := NewAuthorizedEntryFetcherWithFullCache(context.Background(), buildCacheFn, pruneEventsFn, log, clk, defaultCacheReloadInterval, defaultPruneEventsOlderThan)
+	ef, err := NewAuthorizedEntryFetcherWithFullCache(context.Background(), buildCacheFn, log, clk, defaultCacheReloadInterval)
 	require.NoError(t, err)
 
 	pe, err := authpolicy.DefaultAuthPolicy(ctx)
@@ -217,7 +213,6 @@ func TestListenAndServe(t *testing.T) {
 		Metrics:                      metrics,
 		RateLimit:                    rateLimit,
 		EntryFetcherCacheRebuildTask: ef.RunRebuildCacheTask,
-		EntryFetcherPruneEventsTask:  ef.PruneEventsTask,
 		AuthPolicyEngine:             pe,
 		AdminIDs:                     []spiffeid.ID{foreignAdminSVID.ID},
 	}
@@ -649,73 +644,79 @@ func testBundleAPI(ctx context.Context, t *testing.T, udsConn, noauthConn, agent
 func testEntryAPI(ctx context.Context, t *testing.T, udsConn, noauthConn, agentConn, adminConn, federatedAdminConn, downstreamConn *grpc.ClientConn) {
 	t.Run("UDS", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(udsConn), map[string]bool{
-			"CountEntries":         true,
-			"ListEntries":          true,
-			"GetEntry":             true,
-			"BatchCreateEntry":     true,
-			"BatchUpdateEntry":     true,
-			"BatchDeleteEntry":     true,
-			"GetAuthorizedEntries": false,
+			"CountEntries":          true,
+			"ListEntries":           true,
+			"GetEntry":              true,
+			"BatchCreateEntry":      true,
+			"BatchUpdateEntry":      true,
+			"BatchDeleteEntry":      true,
+			"GetAuthorizedEntries":  false,
+			"SyncAuthorizedEntries": false,
 		})
 	})
 
 	t.Run("NoAuth", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(noauthConn), map[string]bool{
-			"CountEntries":         false,
-			"ListEntries":          false,
-			"GetEntry":             false,
-			"BatchCreateEntry":     false,
-			"BatchUpdateEntry":     false,
-			"BatchDeleteEntry":     false,
-			"GetAuthorizedEntries": false,
+			"CountEntries":          false,
+			"ListEntries":           false,
+			"GetEntry":              false,
+			"BatchCreateEntry":      false,
+			"BatchUpdateEntry":      false,
+			"BatchDeleteEntry":      false,
+			"GetAuthorizedEntries":  false,
+			"SyncAuthorizedEntries": false,
 		})
 	})
 
 	t.Run("Agent", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(agentConn), map[string]bool{
-			"CountEntries":         false,
-			"ListEntries":          false,
-			"GetEntry":             false,
-			"BatchCreateEntry":     false,
-			"BatchUpdateEntry":     false,
-			"BatchDeleteEntry":     false,
-			"GetAuthorizedEntries": true,
+			"CountEntries":          false,
+			"ListEntries":           false,
+			"GetEntry":              false,
+			"BatchCreateEntry":      false,
+			"BatchUpdateEntry":      false,
+			"BatchDeleteEntry":      false,
+			"GetAuthorizedEntries":  true,
+			"SyncAuthorizedEntries": true,
 		})
 	})
 
 	t.Run("Admin", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(adminConn), map[string]bool{
-			"CountEntries":         true,
-			"ListEntries":          true,
-			"GetEntry":             true,
-			"BatchCreateEntry":     true,
-			"BatchUpdateEntry":     true,
-			"BatchDeleteEntry":     true,
-			"GetAuthorizedEntries": false,
+			"CountEntries":          true,
+			"ListEntries":           true,
+			"GetEntry":              true,
+			"BatchCreateEntry":      true,
+			"BatchUpdateEntry":      true,
+			"BatchDeleteEntry":      true,
+			"GetAuthorizedEntries":  false,
+			"SyncAuthorizedEntries": false,
 		})
 	})
 
 	t.Run("Federated Admin", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(federatedAdminConn), map[string]bool{
-			"CountEntries":         true,
-			"ListEntries":          true,
-			"GetEntry":             true,
-			"BatchCreateEntry":     true,
-			"BatchUpdateEntry":     true,
-			"BatchDeleteEntry":     true,
-			"GetAuthorizedEntries": false,
+			"CountEntries":          true,
+			"ListEntries":           true,
+			"GetEntry":              true,
+			"BatchCreateEntry":      true,
+			"BatchUpdateEntry":      true,
+			"BatchDeleteEntry":      true,
+			"GetAuthorizedEntries":  false,
+			"SyncAuthorizedEntries": false,
 		})
 	})
 
 	t.Run("Downstream", func(t *testing.T) {
 		testAuthorization(ctx, t, entryv1.NewEntryClient(downstreamConn), map[string]bool{
-			"CountEntries":         false,
-			"ListEntries":          false,
-			"GetEntry":             false,
-			"BatchCreateEntry":     false,
-			"BatchUpdateEntry":     false,
-			"BatchDeleteEntry":     false,
-			"GetAuthorizedEntries": false,
+			"CountEntries":          false,
+			"ListEntries":           false,
+			"GetEntry":              false,
+			"BatchCreateEntry":      false,
+			"BatchUpdateEntry":      false,
+			"BatchDeleteEntry":      false,
+			"GetAuthorizedEntries":  false,
+			"SyncAuthorizedEntries": false,
 		})
 	})
 }
@@ -854,7 +855,7 @@ func testTrustDomainAPI(ctx context.Context, t *testing.T, udsConn, noauthConn, 
 // asserts that the RPC was authorized or not. If a method is not represented
 // in the expectedAuthResults, or a method in expectedAuthResults does not
 // belong to the client interface, the test will fail.
-func testAuthorization(ctx context.Context, t *testing.T, client interface{}, expectedAuthResults map[string]bool) {
+func testAuthorization(ctx context.Context, t *testing.T, client any, expectedAuthResults map[string]bool) {
 	cv := reflect.ValueOf(client)
 	ct := cv.Type()
 

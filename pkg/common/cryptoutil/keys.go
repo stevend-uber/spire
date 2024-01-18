@@ -6,8 +6,8 @@ import (
 	"crypto/rsa"
 	"fmt"
 
+	"github.com/go-jose/go-jose/v3"
 	"github.com/zeebo/errs"
-	"gopkg.in/square/go-jose.v2"
 )
 
 func RSAPublicKeyEqual(a, b *rsa.PublicKey) bool {
@@ -52,7 +52,7 @@ func KeyMatches(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) (bool,
 	}
 }
 
-func JoseAlgFromPublicKey(publicKey interface{}) (jose.SignatureAlgorithm, error) {
+func JoseAlgFromPublicKey(publicKey any) (jose.SignatureAlgorithm, error) {
 	var alg jose.SignatureAlgorithm
 	switch publicKey := publicKey.(type) {
 	case *rsa.PublicKey:

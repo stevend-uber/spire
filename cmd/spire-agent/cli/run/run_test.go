@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/hcl/hcl/ast"
 	"github.com/sirupsen/logrus"
@@ -959,7 +960,7 @@ func TestNewAgentConfig(t *testing.T) {
 						t.Cleanup(func() {
 							spiretest.AssertLogsContainEntries(t, hook.AllEntries(), []spiretest.LogEntry{
 								{
-									Data:  map[string]interface{}{"trust_domain": strings.Repeat("a", 256)},
+									Data:  map[string]any{"trust_domain": strings.Repeat("a", 256)},
 									Level: logrus.WarnLevel,
 									Message: "Configured trust domain name should be less than 255 characters to be " +
 										"SPIFFE compliant; a longer trust domain name may impact interoperability",
@@ -972,6 +973,25 @@ func TestNewAgentConfig(t *testing.T) {
 			},
 			test: func(t *testing.T, c *agent.Config) {
 				assert.NotNil(t, c)
+			},
+		},
+		{
+			msg: "availability_target parses a duration",
+			input: func(c *Config) {
+				c.Agent.AvailabilityTarget = "24h"
+			},
+			test: func(t *testing.T, c *agent.Config) {
+				require.EqualValues(t, 24*time.Hour, c.AvailabilityTarget)
+			},
+		},
+		{
+			msg:         "availability_target is too short",
+			expectError: true,
+			input: func(c *Config) {
+				c.Agent.AvailabilityTarget = "1h"
+			},
+			test: func(t *testing.T, c *agent.Config) {
+				require.Nil(t, c)
 			},
 		},
 	}

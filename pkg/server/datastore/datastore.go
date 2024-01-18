@@ -43,6 +43,7 @@ type DataStore interface {
 	// Entries Events
 	ListRegistrationEntriesEvents(ctx context.Context, req *ListRegistrationEntriesEventsRequest) (*ListRegistrationEntriesEventsResponse, error)
 	PruneRegistrationEntriesEvents(ctx context.Context, olderThan time.Duration) error
+	GetLatestRegistrationEntryEventID(ctx context.Context) (uint, error)
 
 	// Nodes
 	CountAttestedNodes(context.Context) (int32, error)
@@ -55,6 +56,7 @@ type DataStore interface {
 	// Nodes Events
 	ListAttestedNodesEvents(ctx context.Context, req *ListAttestedNodesEventsRequest) (*ListAttestedNodesEventsResponse, error)
 	PruneAttestedNodesEvents(ctx context.Context, olderThan time.Duration) error
+	GetLatestAttestedNodeEventID(ctx context.Context) (uint, error)
 
 	// Node selectors
 	GetNodeSelectors(ctx context.Context, spiffeID string, dataConsistency DataConsistency) ([]*common.Selector, error)
@@ -73,6 +75,12 @@ type DataStore interface {
 	ListFederationRelationships(context.Context, *ListFederationRelationshipsRequest) (*ListFederationRelationshipsResponse, error)
 	DeleteFederationRelationship(context.Context, spiffeid.TrustDomain) error
 	UpdateFederationRelationship(context.Context, *FederationRelationship, *types.FederationRelationshipMask) (*FederationRelationship, error)
+
+	// CA Journals
+	SetCAJournal(ctx context.Context, caJournal *CAJournal) (*CAJournal, error)
+	FetchCAJournal(ctx context.Context, activeX509AuthorityID string) (*CAJournal, error)
+	PruneCAJournals(ctx context.Context, allCAsExpireBefore int64) error
+	ListCAJournalsForTesting(ctx context.Context) ([]*CAJournal, error)
 }
 
 // DataConsistency indicates the required data consistency for a read operation.
@@ -162,8 +170,13 @@ type ListAttestedNodesEventsRequest struct {
 	GreaterThanEventID uint
 }
 
+type AttestedNodeEvent struct {
+	EventID  uint
+	SpiffeID string
+}
+
 type ListAttestedNodesEventsResponse struct {
-	SpiffeIDs    []string
+	Events       []AttestedNodeEvent
 	FirstEventID uint
 }
 
@@ -195,6 +208,12 @@ type ListRegistrationEntriesRequest struct {
 	ByHint          string
 }
 
+type CAJournal struct {
+	ID                    uint
+	Data                  []byte
+	ActiveX509AuthorityID string
+}
+
 type ListRegistrationEntriesResponse struct {
 	Entries    []*common.RegistrationEntry
 	Pagination *Pagination
@@ -204,8 +223,13 @@ type ListRegistrationEntriesEventsRequest struct {
 	GreaterThanEventID uint
 }
 
+type RegistrationEntryEvent struct {
+	EventID uint
+	EntryID string
+}
+
 type ListRegistrationEntriesEventsResponse struct {
-	EntryIDs     []string
+	Events       []RegistrationEntryEvent
 	FirstEventID uint
 }
 
